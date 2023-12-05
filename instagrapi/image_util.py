@@ -71,11 +71,10 @@ def calc_crop(aspect_ratios, curr_size):
     :return:
     """
     try:
-        if len(aspect_ratios) == 2:
-            min_aspect_ratio = float(aspect_ratios[0])
-            max_aspect_ratio = float(aspect_ratios[1])
-        else:
+        if len(aspect_ratios) != 2:
             raise ValueError("Invalid aspect ratios")
+        min_aspect_ratio = float(aspect_ratios[0])
+        max_aspect_ratio = float(aspect_ratios[1])
     except TypeError:
         # not a min-max range
         min_aspect_ratio = float(aspect_ratios)
@@ -102,9 +101,7 @@ def calc_crop(aspect_ratios, curr_size):
 
 def is_remote(media):
     """Detect if media specified is a url"""
-    if re.match(r"^https?://", media):
-        return True
-    return False
+    return bool(re.match(r"^https?://", media))
 
 
 def prepare_image(
@@ -134,12 +131,10 @@ def prepare_image(
         im = Image.open(img)
 
     if aspect_ratios:
-        crop_box = calc_crop(aspect_ratios, im.size)
-        if crop_box:
+        if crop_box := calc_crop(aspect_ratios, im.size):
             im = im.crop(crop_box)
 
-    new_size = calc_resize(max_size, im.size, min_size=min_size)
-    if new_size:
+    if new_size := calc_resize(max_size, im.size, min_size=min_size):
         im = im.resize(new_size)
 
     if im.mode != "RGB":
@@ -193,7 +188,7 @@ def prepare_video(
     from moviepy.video.fx.all import resize, crop
 
     min_size = kwargs.pop("min_size", (612, 320))
-    progress_bar = True if kwargs.pop("progress_bar", None) else False
+    progress_bar = bool(kwargs.pop("progress_bar", None))
     save_only = kwargs.pop("save_only", False)
     preset = kwargs.pop("preset", "medium")
     if save_only and not save_path:
@@ -230,16 +225,14 @@ def prepare_video(
         raise ValueError("Invalid thumbnail frame")
 
     if aspect_ratios:
-        crop_box = calc_crop(aspect_ratios, vidclip.size)
-        if crop_box:
+        if crop_box := calc_crop(aspect_ratios, vidclip.size):
             vidclip = crop(
                 vidclip, x1=crop_box[0], y1=crop_box[1], x2=crop_box[2], y2=crop_box[3]
             )
             vid_is_modified = True
 
     if max_size or min_size:
-        new_size = calc_resize(max_size, vidclip.size, min_size=min_size)
-        if new_size:
+        if new_size := calc_resize(max_size, vidclip.size, min_size=min_size):
             vidclip = resize(vidclip, newsize=new_size)
             vid_is_modified = True
 
